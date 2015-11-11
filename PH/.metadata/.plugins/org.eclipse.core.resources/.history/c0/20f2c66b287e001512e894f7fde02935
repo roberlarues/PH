@@ -1,0 +1,55 @@
+/*********************************************************************************************
+* Fichero:	main.c
+* Autor:
+* Descrip:	punto de entrada de C
+* Version:  <P4-ARM.timer-leds>
+*********************************************************************************************/
+#include <inttypes.h>
+/*--- ficheros de cabecera ---*/
+#include "44blib.h"
+#include "44b.h"
+#include "stdio.h"
+
+/*--- variables globales ---*/
+extern int switch_leds2;
+
+/*--- funciones externas ---*/
+extern void leds_off();
+extern void led1_on();
+extern void leds_switch();
+extern void timer2_inicializar();
+extern void Eint4567_init();
+extern void D8Led_init();
+extern uint32_t timer2_leer();
+
+/*--- declaracion de funciones ---*/
+void Main(void);
+
+/*--- codigo de funciones ---*/
+void Main(void)
+{
+	uint32_t start = 0;
+	uint32_t end = 0;
+	/* Inicializa controladores */
+	sys_init();        // Inicializacion de la placa, interrupciones y puertos
+	Eint4567_init();	// inicializamos los pulsadores. Cada vez que se pulse se verá reflejado en el 8led
+	D8Led_init(); // inicializamos el 8led
+
+	/* Valor inicial de los leds */
+	leds_off();
+	led1_on();
+
+	timer2_inicializar();	   // Inicializacion del temporizador
+	while (1)
+	{
+		/* Cambia los leds con cada interrupcion del temporizador */
+		//if (switch_leds2 == 1)
+		{
+			//leds_switch();
+			start = timer2_leer();
+			Delay(1000);
+			end = timer2_leer();
+			//switch_leds2 = 0;
+		}
+	}
+}

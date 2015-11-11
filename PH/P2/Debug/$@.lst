@@ -1,0 +1,313 @@
+   1              		.cpu arm7tdmi
+   2              		.fpu softvfp
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 6
+  10              		.eabi_attribute 18, 4
+  11              		.file	"main.c"
+  21              	.Ltext0:
+  22              		.file 1 "..\\main.c"
+ 2729              		.align	2
+ 2732              	MEMStacks:
+ 2733 0000 00E07F0C 		.word	209707008
+ 2734              		.comm	MEMDStack,4,4
+ 2735              		.comm	SPDStack,4,4
+ 2736              		.comm	SDStack,4,4
+ 2737              		.text
+ 2738              		.align	2
+ 2739              		.global	Main
+ 2741              	Main:
+ 2742              	.LFB0:
+   1:..\main.c     **** /*********************************************************************************************
+   2:..\main.c     **** * Fichero:	main.c
+   3:..\main.c     **** * Autor:
+   4:..\main.c     **** * Descrip:	punto de entrada de C
+   5:..\main.c     **** * Version:  <P4-ARM.timer-leds>
+   6:..\main.c     **** *********************************************************************************************/
+   7:..\main.c     **** 
+   8:..\main.c     **** /*--- ficheros de cabecera ---*/
+   9:..\main.c     **** #include <inttypes.h>
+  10:..\main.c     **** //#include "44blib.h"
+  11:..\main.c     **** //#include "44b.h"
+  12:..\main.c     **** #include "stdio.h"
+  13:..\main.c     **** 
+  14:..\main.c     **** uint32_t MEMStacks = 0x0c7FE000;// DIrección de las pilas
+  15:..\main.c     **** uint32_t MEMDStack;// Dirección de la pila de debug
+  16:..\main.c     **** int *SPDStack;// Stack pointer de la pila de debug
+  17:..\main.c     **** int SDStack; // Tamaño de la pila
+  18:..\main.c     **** 
+  19:..\main.c     **** /*--- variables globales ---*/
+  20:..\main.c     **** extern int switch_leds;
+  21:..\main.c     **** 
+  22:..\main.c     **** /*--- funciones externas ---*/
+  23:..\main.c     **** extern void leds_off();
+  24:..\main.c     **** extern void led1_on();
+  25:..\main.c     **** extern void leds_switch();
+  26:..\main.c     **** extern void timer_init();
+  27:..\main.c     **** extern void Eint4567_init();
+  28:..\main.c     **** extern void D8Led_init();
+  29:..\main.c     **** 
+  30:..\main.c     **** /*--- declaracion de funciones ---*/
+  31:..\main.c     **** void Main(void);
+  32:..\main.c     **** void init_debug_stack();
+  33:..\main.c     **** 
+  34:..\main.c     **** /*--- codigo de funciones ---*/
+  35:..\main.c     **** void Main(void)
+  36:..\main.c     **** {
+ 2743              		.loc 1 36 0
+ 2744              		.cfi_startproc
+ 2745              		@ Function supports interworking.
+ 2746              		@ args = 0, pretend = 0, frame = 0
+ 2747              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2748 0000 0DC0A0E1 		mov	ip, sp
+ 2749              	.LCFI0:
+ 2750              		.cfi_def_cfa_register 12
+ 2751 0004 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2752 0008 04B04CE2 		sub	fp, ip, #4
+ 2753              		.cfi_offset 14, -8
+ 2754              		.cfi_offset 13, -12
+ 2755              		.cfi_offset 11, -16
+ 2756              	.LCFI1:
+ 2757              		.cfi_def_cfa 11, 4
+  37:..\main.c     **** 
+  38:..\main.c     **** 	/* Inicializa controladores */
+  39:..\main.c     **** 	sys_init();        // Inicializacion de la placa, interrupciones y puertos
+ 2758              		.loc 1 39 0
+ 2759 000c FEFFFFEB 		bl	sys_init
+  40:..\main.c     **** 	timer_init();	   // Inicializacion del temporizador
+ 2760              		.loc 1 40 0
+ 2761 0010 FEFFFFEB 		bl	timer_init
+  41:..\main.c     **** 	Eint4567_init();	// inicializamos los pulsadores. Cada vez que se pulse se verá reflejado en el 8l
+ 2762              		.loc 1 41 0
+ 2763 0014 FEFFFFEB 		bl	Eint4567_init
+  42:..\main.c     **** 	D8Led_init(); // inicializamos el 8led
+ 2764              		.loc 1 42 0
+ 2765 0018 FEFFFFEB 		bl	D8Led_init
+  43:..\main.c     **** 
+  44:..\main.c     **** 
+  45:..\main.c     **** 	/* Valor inicial de los leds */
+  46:..\main.c     **** 	leds_off();
+ 2766              		.loc 1 46 0
+ 2767 001c FEFFFFEB 		bl	leds_off
+  47:..\main.c     **** 	led1_on();
+ 2768              		.loc 1 47 0
+ 2769 0020 FEFFFFEB 		bl	led1_on
+ 2770 0024 000000EA 		b	.L3
+ 2771              	.L4:
+  48:..\main.c     **** 
+  49:..\main.c     **** 	while (1)
+  50:..\main.c     **** 	{
+  51:..\main.c     **** 		/* Cambia los leds con cada interrupcion del temporizador */
+  52:..\main.c     **** 		if (switch_leds == 1)
+  53:..\main.c     **** 		{
+  54:..\main.c     **** 			leds_switch();
+  55:..\main.c     **** 			switch_leds = 0;
+  56:..\main.c     **** 		}
+  57:..\main.c     **** 	}
+ 2772              		.loc 1 57 0
+ 2773 0028 0000A0E1 		mov	r0, r0	@ nop
+ 2774              	.L3:
+  52:..\main.c     **** 		if (switch_leds == 1)
+ 2775              		.loc 1 52 0
+ 2776 002c 1C309FE5 		ldr	r3, .L5
+ 2777 0030 003093E5 		ldr	r3, [r3, #0]
+ 2778 0034 010053E3 		cmp	r3, #1
+ 2779 0038 FAFFFF1A 		bne	.L4
+  54:..\main.c     **** 			leds_switch();
+ 2780              		.loc 1 54 0
+ 2781 003c FEFFFFEB 		bl	leds_switch
+  55:..\main.c     **** 			switch_leds = 0;
+ 2782              		.loc 1 55 0
+ 2783 0040 08309FE5 		ldr	r3, .L5
+ 2784 0044 0020A0E3 		mov	r2, #0
+ 2785 0048 002083E5 		str	r2, [r3, #0]
+ 2786              		.loc 1 57 0
+ 2787 004c F6FFFFEA 		b	.L3
+ 2788              	.L6:
+ 2789              		.align	2
+ 2790              	.L5:
+ 2791 0050 00000000 		.word	switch_leds
+ 2792              		.cfi_endproc
+ 2793              	.LFE0:
+ 2795              		.align	2
+ 2796              		.global	init_debug_stack
+ 2798              	init_debug_stack:
+ 2799              	.LFB1:
+  58:..\main.c     **** }
+  59:..\main.c     **** 
+  60:..\main.c     **** 
+  61:..\main.c     **** void init_debug_stack(int tam)
+  62:..\main.c     **** {
+ 2800              		.loc 1 62 0
+ 2801              		.cfi_startproc
+ 2802              		@ Function supports interworking.
+ 2803              		@ args = 0, pretend = 0, frame = 8
+ 2804              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2805 0054 0DC0A0E1 		mov	ip, sp
+ 2806              	.LCFI2:
+ 2807              		.cfi_def_cfa_register 12
+ 2808 0058 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2809 005c 04B04CE2 		sub	fp, ip, #4
+ 2810              		.cfi_offset 14, -8
+ 2811              		.cfi_offset 13, -12
+ 2812              		.cfi_offset 11, -16
+ 2813              	.LCFI3:
+ 2814              		.cfi_def_cfa 11, 4
+ 2815 0060 08D04DE2 		sub	sp, sp, #8
+ 2816 0064 10000BE5 		str	r0, [fp, #-16]
+  63:..\main.c     **** 	MEMDStack = MEMStacks - tam*3*sizeof(int);// 3 enteros*4
+ 2817              		.loc 1 63 0
+ 2818 0068 10201BE5 		ldr	r2, [fp, #-16]
+ 2819 006c 0230A0E1 		mov	r3, r2
+ 2820 0070 0221A0E1 		mov	r2, r2, asl #2
+ 2821 0074 033062E0 		rsb	r3, r2, r3
+ 2822 0078 0331A0E1 		mov	r3, r3, asl #2
+ 2823 007c 0320A0E1 		mov	r2, r3
+ 2824 0080 38309FE5 		ldr	r3, .L8
+ 2825 0084 003093E5 		ldr	r3, [r3, #0]
+ 2826 0088 032082E0 		add	r2, r2, r3
+ 2827 008c 30309FE5 		ldr	r3, .L8+4
+ 2828 0090 002083E5 		str	r2, [r3, #0]
+  64:..\main.c     **** 	SDStack = tam;
+ 2829              		.loc 1 64 0
+ 2830 0094 2C309FE5 		ldr	r3, .L8+8
+ 2831 0098 10201BE5 		ldr	r2, [fp, #-16]
+ 2832 009c 002083E5 		str	r2, [r3, #0]
+  65:..\main.c     **** 	SPDStack = (int*)MEMDStack;
+ 2833              		.loc 1 65 0
+ 2834 00a0 1C309FE5 		ldr	r3, .L8+4
+ 2835 00a4 003093E5 		ldr	r3, [r3, #0]
+ 2836 00a8 0320A0E1 		mov	r2, r3
+ 2837 00ac 18309FE5 		ldr	r3, .L8+12
+ 2838 00b0 002083E5 		str	r2, [r3, #0]
+  66:..\main.c     **** }
+ 2839              		.loc 1 66 0
+ 2840 00b4 0CD04BE2 		sub	sp, fp, #12
+ 2841 00b8 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2842 00bc 1EFF2FE1 		bx	lr
+ 2843              	.L9:
+ 2844              		.align	2
+ 2845              	.L8:
+ 2846 00c0 00000000 		.word	MEMStacks
+ 2847 00c4 00000000 		.word	MEMDStack
+ 2848 00c8 00000000 		.word	SDStack
+ 2849 00cc 00000000 		.word	SPDStack
+ 2850              		.cfi_endproc
+ 2851              	.LFE1:
+ 2853              		.align	2
+ 2854              		.global	push_debug
+ 2856              	push_debug:
+ 2857              	.LFB2:
+  67:..\main.c     **** 
+  68:..\main.c     **** void push_debug(int ID_evento, int auxData)
+  69:..\main.c     **** {
+ 2858              		.loc 1 69 0
+ 2859              		.cfi_startproc
+ 2860              		@ Function supports interworking.
+ 2861              		@ args = 0, pretend = 0, frame = 8
+ 2862              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2863 00d0 0DC0A0E1 		mov	ip, sp
+ 2864              	.LCFI4:
+ 2865              		.cfi_def_cfa_register 12
+ 2866 00d4 10D82DE9 		stmfd	sp!, {r4, fp, ip, lr, pc}
+ 2867 00d8 04B04CE2 		sub	fp, ip, #4
+ 2868              		.cfi_offset 14, -8
+ 2869              		.cfi_offset 13, -12
+ 2870              		.cfi_offset 11, -16
+ 2871              		.cfi_offset 4, -20
+ 2872              	.LCFI5:
+ 2873              		.cfi_def_cfa 11, 4
+ 2874 00dc 0CD04DE2 		sub	sp, sp, #12
+ 2875 00e0 18000BE5 		str	r0, [fp, #-24]
+ 2876 00e4 1C100BE5 		str	r1, [fp, #-28]
+  70:..\main.c     **** 	*SPDStack = ID_evento;
+ 2877              		.loc 1 70 0
+ 2878 00e8 84309FE5 		ldr	r3, .L12
+ 2879 00ec 003093E5 		ldr	r3, [r3, #0]
+ 2880 00f0 18201BE5 		ldr	r2, [fp, #-24]
+ 2881 00f4 002083E5 		str	r2, [r3, #0]
+  71:..\main.c     **** 	*(SPDStack+sizeof(int)) = auxData;
+ 2882              		.loc 1 71 0
+ 2883 00f8 74309FE5 		ldr	r3, .L12
+ 2884 00fc 003093E5 		ldr	r3, [r3, #0]
+ 2885 0100 103083E2 		add	r3, r3, #16
+ 2886 0104 1C201BE5 		ldr	r2, [fp, #-28]
+ 2887 0108 002083E5 		str	r2, [r3, #0]
+  72:..\main.c     **** 	*(SPDStack+sizeof(int)*2) = timer2_leer();
+ 2888              		.loc 1 72 0
+ 2889 010c 60309FE5 		ldr	r3, .L12
+ 2890 0110 003093E5 		ldr	r3, [r3, #0]
+ 2891 0114 204083E2 		add	r4, r3, #32
+ 2892 0118 FEFFFFEB 		bl	timer2_leer
+ 2893 011c 0030A0E1 		mov	r3, r0
+ 2894 0120 003084E5 		str	r3, [r4, #0]
+  73:..\main.c     **** 	SPDStack += sizeof(int)*3;
+ 2895              		.loc 1 73 0
+ 2896 0124 48309FE5 		ldr	r3, .L12
+ 2897 0128 003093E5 		ldr	r3, [r3, #0]
+ 2898 012c 302083E2 		add	r2, r3, #48
+ 2899 0130 3C309FE5 		ldr	r3, .L12
+ 2900 0134 002083E5 		str	r2, [r3, #0]
+  74:..\main.c     **** 	if (SPDStack==(int*)MEMStacks) SPDStack = (int*)MEMDStack;//Si se llena la pila volver al comienzo
+ 2901              		.loc 1 74 0
+ 2902 0138 38309FE5 		ldr	r3, .L12+4
+ 2903 013c 003093E5 		ldr	r3, [r3, #0]
+ 2904 0140 0320A0E1 		mov	r2, r3
+ 2905 0144 28309FE5 		ldr	r3, .L12
+ 2906 0148 003093E5 		ldr	r3, [r3, #0]
+ 2907 014c 030052E1 		cmp	r2, r3
+ 2908 0150 0400001A 		bne	.L10
+ 2909              		.loc 1 74 0 is_stmt 0 discriminator 1
+ 2910 0154 20309FE5 		ldr	r3, .L12+8
+ 2911 0158 003093E5 		ldr	r3, [r3, #0]
+ 2912 015c 0320A0E1 		mov	r2, r3
+ 2913 0160 0C309FE5 		ldr	r3, .L12
+ 2914 0164 002083E5 		str	r2, [r3, #0]
+ 2915              	.L10:
+  75:..\main.c     **** 
+  76:..\main.c     **** }
+ 2916              		.loc 1 76 0 is_stmt 1
+ 2917 0168 10D04BE2 		sub	sp, fp, #16
+ 2918 016c 10689DE8 		ldmfd	sp, {r4, fp, sp, lr}
+ 2919 0170 1EFF2FE1 		bx	lr
+ 2920              	.L13:
+ 2921              		.align	2
+ 2922              	.L12:
+ 2923 0174 00000000 		.word	SPDStack
+ 2924 0178 00000000 		.word	MEMStacks
+ 2925 017c 00000000 		.word	MEMDStack
+ 2926              		.cfi_endproc
+ 2927              	.LFE2:
+ 2929              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2732   .data:00000000 MEMStacks
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2729   .data:00000000 $d
+                            *COM*:00000004 MEMDStack
+                            *COM*:00000004 SPDStack
+                            *COM*:00000004 SDStack
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2738   .text:00000000 $a
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2741   .text:00000000 Main
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2791   .text:00000050 $d
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2795   .text:00000054 $a
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2798   .text:00000054 init_debug_stack
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2846   .text:000000c0 $d
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2853   .text:000000d0 $a
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2856   .text:000000d0 push_debug
+C:\Users\Roberto\AppData\Local\Temp\ccynTq3j.s:2923   .text:00000174 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+sys_init
+timer_init
+Eint4567_init
+D8Led_init
+leds_off
+led1_on
+leds_switch
+switch_leds
+timer2_leer
