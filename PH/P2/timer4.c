@@ -3,6 +3,7 @@
 #include "44blib.h"
 
 uint32_t timer4_num_int = 0;
+uint32_t intervalo = 10000;
 
 void timer4_ISR(void) __attribute__((interrupt("IRQ")));
 
@@ -13,8 +14,10 @@ void timer4_ISR(void)
 	rI_ISPC |= BIT_TIMER4; // BIT_TIMER2 está definido en 44b.h y pone un uno en el bit 11 que correponde al Timer2
 }
 
-void timer4_empezar()
+void timer4_empezar(uint32_t nuevo_intervalo)
 {
+   rTCNTB4 = nuevo_intervalo;// valor inicial de cuenta (la cuenta es descendente)
+
    uint32_t TCON_tmp;
 
    /* establecer update=manual (bit 21) + inverter=on (¿? será inverter off un cero en el bit 2 pone el inverter en off)*/
@@ -38,7 +41,6 @@ void timer4_inicializar()
 	/* Configura el Timer0 */
 	rTCFG0 |= 31 << 16; // ajusta el preescalado
 	rTCFG1 |= 0 << 16; // selecciona la entrada del mux que proporciona el reloj. La 00 corresponde a un divisor de 1/2.
-	rTCNTB4 = 10000;// valor inicial de cuenta (la cuenta es descendente)
 	rTCMPB4 = 0;// valor de comparación
 }
 

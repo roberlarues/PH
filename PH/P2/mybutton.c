@@ -10,18 +10,33 @@
 #include "44b.h"
 #include "def.h"
 
+/*--- Constantes ---*/
+int trp = 100;
+int trd = 100;
+
+enum ESTADOS { ESPERANDO, PULSANDO, PULSADO, SOLTANDO, MANTENIDO };
+
 /*--- variables globales ---*/
+int boton = rEXTINTPND;
+int estado = PULSANDO;
+int estado_retorno = PULSANDO;
+int ultimo_tiempo = -1;
+
 /* int_count la utilizamos para sacar un número por el 8led.
   Cuando se pulsa un botón sumamos y con el otro restamos. ¡A veces hay rebotes! */
 unsigned int int_count = 0;
 
 /*--- declaracion de funciones ---*/
-void Eint4567_ISR(void) __attribute__((interrupt("IRQ")));
-void Eint4567_init(void);
+void mybutton_ISR(void) __attribute__((interrupt("IRQ")));
+void mybutton_init(void);
+void aplicar_efecto_boton(void);
 extern void D8Led_symbol(int value); // declaramos la función que escribe en el 8led
+extern uint32_t timer4_leer();
+extern void timer4_empezar(uint32_t nuevo_intervalo);
+extern void timer4_inicializar();
 
 /*--- codigo de funciones ---*/
-void Eint4567_init(void)
+void mybutton_init(void)
 {
 	/* Configuracion del controlador de interrupciones. Estos registros están definidos en 44b.h */
 	rI_ISPC    = 0x3ffffff;	// Borra INTPND escribiendo 1s en I_ISPC
@@ -31,7 +46,10 @@ void Eint4567_init(void)
 	rINTMSK    = ~(BIT_GLOBAL | BIT_EINT4567 | BIT_TIMER0); // Enmascara todas las lineas excepto eint4567, el bit global y el timer0
 
 	/* Establece la rutina de servicio para Eint4567 */
-	pISR_EINT4567 = (int)Eint4567_ISR;
+	pISR_EINT4567 = (int)mybutton_ISR;
+
+	/* Inicializa el timer*/
+	timer4_inicializar();
 
 	/* Configuracion del puerto G */
 	rPCONG  = 0xffff;        		// Establece la funcion de los pines (EINT0-7)
@@ -43,11 +61,58 @@ void Eint4567_init(void)
 	rEXTINTPND = 0xf;
 }
 
-void Eint4567_ISR(void)
+void mybutton_ISR(void)
 {
 	/* Identificar la interrupcion (hay dos pulsadores)*/
-	int which_int = rEXTINTPND;
-	switch (which_int)
+	boton = rEXTINTPND;
+	estado = PULSANDO;
+	timer4_empezar(trp);
+	/* Finalizar ISR */
+	rEXTINTPND = 0xf;				// borra los bits en EXTINTPND
+	rI_ISPC   |= BIT_EINT4567;		// borra el bit pendiente en INTPND
+}
+
+void comprobar_boton(void)
+{
+	int tiempo_transcurrido = timer4_leer();
+	// Actualiza con cada interrupcion del timer
+	if (tiempo_transcurrido != ultimo_tiempo)
+	{
+		ultimo_tiempo = tiempo_transcurrido;
+		switch(estado)
+		{
+			case PULSANDO:
+				aplicar_efecto_boton();
+				timer4_empezar(10000);// Reiniciar timer.
+				estado = PULSADO;
+				break;
+			case PULSADO:
+				if (rPDATG == boton<<4){
+					estado = SOLTANDO;
+				} else if (tiempo_transcurrido>=50){
+					aplicar_efecto_boton();
+					timer4_empezar(10000);// Reiniciar timer.
+					estado = MANTENIDO;
+				}
+				break;
+			case MANTENIDO:
+				if ((rPDATG & (boton<<4)) > 0){
+					estado = SOLTANDO;
+				} else if (tiempo_transcurrido>=30){
+					aplicar_efecto_boton();
+					timer4_empezar(10000);// Reiniciar timer.
+				}
+				break;
+			case SOLTANDO:
+				estado = ESPERANDO;
+				break;
+		}
+	}
+}
+
+void aplicar_efecto_boton(void)
+{
+	switch (boton)
 	{
 		case 4:
 			int_count++; // incrementamos el contador
@@ -58,11 +123,5 @@ void Eint4567_ISR(void)
 		default:
 			break;
 	}
-	// }
-	D8Led_symbol(int_count&0x000f); // sacamos el valor por pantalla (módulo 16)
-	/* Finalizar ISR */
-	rEXTINTPND = 0xf;				// borra los bits en EXTINTPND
-	rI_ISPC   |= BIT_EINT4567;		// borra el bit pendiente en INTPND
-
+	D8Led_symbol(int_count&0x000f);// sacamos el valor por pantalla (módulo 16)
 }
-
