@@ -1,0 +1,141 @@
+.global start
+.global screen
+.global _ISR_STARTADDRESS
+
+.equ _ISR_STARTADDRESS, 0xc7fff00                     /* GCS6:64M DRAM/SDRAM */
+.equ UserStack,         _ISR_STARTADDRESS-0xf00       /* c7ff000 */
+.equ SVCStack,          _ISR_STARTADDRESS-0xf00+256   /* c7ff100 */
+.equ UndefStack,        _ISR_STARTADDRESS-0xf00+256*2 /* c7ff200 */
+.equ AbortStack,        _ISR_STARTADDRESS-0xf00+256*3 /* c7ff300 */
+.equ IRQStack,          _ISR_STARTADDRESS-0xf00+256*4 /* c7ff400 */
+.equ FIQStack,          _ISR_STARTADDRESS-0xf00+256*5 /* c7ff500 */
+
+.equ HandleReset,       _ISR_STARTADDRESS
+.equ HandleUndef,       _ISR_STARTADDRESS+4
+.equ HandleSWI,         _ISR_STARTADDRESS+4*2
+.equ HandlePabort,      _ISR_STARTADDRESS+4*3
+.equ HandleDabort,      _ISR_STARTADDRESS+4*4
+.equ HandleReserved,    _ISR_STARTADDRESS+4*5
+.equ HandleIRQ,         _ISR_STARTADDRESS+4*6
+.equ HandleFIQ,         _ISR_STARTADDRESS+4*7
+
+.equ USERMODE,    0x10
+.equ FIQMODE,     0x11
+.equ IRQMODE,     0x12
+.equ SVCMODE,     0x13
+.equ ABORTMODE,   0x17
+.equ UNDEFMODE,   0x1b
+.equ MODEMASK,    0x1f
+.equ NOINT,       0xc0 /* Máscara para deshabilitar interrupciones */
+.equ IRQ_MODE,    0x40 /* deshabilitar interrupciones en modo IRQ */
+.equ FIQ_MODE,    0x80 /* deshabilitar interrupciones en modo FIQ */
+
+.macro HANDLER HandleLabel
+   sub sp,sp,#4 /* Decrementamos sp en 4 */
+   stmfd sp!,{r0} /* Salvamos r0 en la pila */
+   ldr r0,=\HandleLabel /* Cargamos en r0 el valor del símbolo pasado como argumento a la macro */
+   ldr r0,[r0] /* Cargamos en r0 el contenido de esta dirección, que será la dirección de comienzo de la rutina de tratamiento de la excepción */
+   str r0,[sp,#4] /* Almacenamos esta dirección en la posición de la pila que reservamos al comienzo */
+   ldmfd sp!,{r0,pc} /* Saltamos a la dirección restaurando r0 */
+.endm
+
+.arm
+start:
+ENTRY:
+   b ResetHandler /* 0x00 */
+   b MyHandler /* 0x04 */
+   b MyHandler /* 0x08 */
+   b MyHandler /* 0x0C */
+   b MyHandler /* 0x10 */
+   b . /* 0x14 */
+   b MyHandler /* 0x18 */
+   b MyHandler /* 0x1C */
+
+.align
+   HandlerFIQ:    HANDLER HandleFIQ
+   HandlerIRQ:    HANDLER HandleIRQ
+   HandlerUndef:  HANDLER HandleUndef
+   HandlerSWI:    HANDLER HandleSWI
+   HandlerDabort: HANDLER HandleDabort
+   HandlerPabort: HANDLER HandlePabort
+
+/* Si comenzamos con un reset el procesador está en modo supervisor */
+ResetHandler:
+   BL       InitStacks
+/* Seguimos en modo supervisor, configuramos las direcciones de las rutinas de tratamiento de excepciones */
+   BL       InitISR
+
+/* Pasamos a modo usuario, inicializamos su pila y ponemos a cero el frame pointer*/
+   MRS      R0,         CPSR
+   BIC      R0,         R0,   #MODEMASK
+   ORR      R1,         R0,   #USERMODE
+   MSR      cpsr_cxsf,  R1 /* UserMode */
+   LDR      SP,         =UserStack
+   MOV      FP,         #0
+
+/* Saltamos a Main */
+.extern Main
+   LDR      R0,         =Main
+   MOV      LR,         PC
+   MOV      PC,         R0
+   B        .
+
+InitStacks:
+/* Añadir código para configurar los registros de pila de cada modo.
+Para ello hay que pasar al modo y escribir en sp la dirección de comienzo de la pila
+para ese modo. Estas direcciones están dadas por los símbolos definidos arriba */
+   MRS      R0,         CPSR
+   BIC      R0,         R0,   #MODEMASK
+   ORR      R1,         R0,   #UNDEFMODE
+   MSR      cpsr_cxsf,  R1 /* Undefined Mode */
+   LDR      SP,         =UndefStack
+
+   ORR      R1,         R0,   #ABORTMODE
+   MSR      cpsr_cxsf,  R1 /* Abort Mode */
+   LDR      SP,         =AbortStack
+
+   ORR      R1,         R0,   #IRQMODE
+   MSR      cpsr_cxsf,  R1 /* IRQ Mode */
+   LDR      SP,         =IRQStack
+
+   ORR      R1,         R0,   #FIQMODE
+   MSR      cpsr_cxsf,  R1 /* FIQ Mode */
+   LDR      SP,         =FIQStack
+
+   ORR      R1,         R0,   #SVCMODE
+   MSR      cpsr_cxsf,  R1 /* SVC Mode */
+   LDR      SP,         =SVCStack
+
+   MOV      PC,         LR
+
+InitISR:
+.extern MyHandler
+/* Añadir código para configurar las direcciones de comienzo de las rutinas
+de tratamiento de excepción. Por ejemplo para Undef hay que copiar la dirección de
+ISR_Undef en la dirección HandleUndef */
+   LDR      R0,         =HandleUndef
+   LDR      R1,         =MyHandler
+   STR      R1,         [R0]
+
+   LDR      R0,         =HandleSWI
+   STR      R1,         [R0]
+
+   LDR      R0,         =HandlePabort
+   STR      R1,         [R0]
+
+   LDR      R0,         =HandleDabort
+   STR      R1,         [R0]
+
+   LDR      R0,         =HandleIRQ
+   STR      R1,         [R0]
+
+   LDR      R0,         =HandleFIQ
+   STR      R1,         [R0]
+
+   MOV      PC,         LR
+/* Rutinas de generación de excepciones */
+
+screen:
+   .space 1024
+
+.end

@@ -1,11 +1,6 @@
-02:53:06 **** Build of configuration Debug for project P2 ****
+16:40:03 **** Build of configuration Debug for project P2 ****
 cs-make all 
-'Building file: ../common/44binit.asm'
-'Invoking: ARM Sourcery Windows GCC Assembler'
-arm-none-eabi-gcc -x assembler-with-cpp -I"G:\PH\P2\common" -Wall -Wa,-adhlns="common/44binit.o.lst" -c -fmessage-length=0 -MMD -MP -MF"common/44binit.d" -MT"common/44binit.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "common/44binit.o" "../common/44binit.asm"
-C:\Users\Roberto\AppData\Local\Temp\cc2qWuSf.s: Assembler messages:
-C:\Users\Roberto\AppData\Local\Temp\cc2qWuSf.s:327: Error: can't open option.a for reading: No such file or directory
-C:\Users\Roberto\AppData\Local\Temp\cc2qWuSf.s:328: Error: can't open memcfg.a for reading: No such file or directory
-../common/44binit.asm:233: Error: non-constant expression in ".if" statement
-../common/44binit.asm:396: Error: non-constant expression in ".if" statement
-cs-make: *** [common/44binit.o] Error 1
+Cannot run program "cs-make": Launching failed
+
+Error: Program "cs-make" not found in PATH
+PATH=[C:/Program Files/EclipseARM/eclipse/jre/bin/client;C:/Program Files/EclipseARM/eclipse/jre/bin;C:/Program Files/EclipseARM/eclipse/jre/lib/i386;C:\ProgramData\Oracle\Java\javapath;C:\Program Files\Rockwell Software\RSCommon;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\MATLAB_R2012b\bin;C:\Program Files\IVI Foundation\VISA\WinNT\Bin;C:\Program Files\EclipseARM\eclipse;C:\Program Files\EclipseARM\sourcery-g++-lite-arm-2011.03\bin;C:\Program Files\EclipseARM\openocd-0.7.0\bin]

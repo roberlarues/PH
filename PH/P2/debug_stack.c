@@ -1,19 +1,17 @@
-
 #include <inttypes.h>
 
-uint32_t MEMStacks = 0x0c7FE000;// DIrección de las pilas
-uint32_t MEMDStack;// Dirección de la pila de debug
-int *SPDStack;// Stack pointer de la pila de debug
-int SDStack; // Tamaño de la pila
+#define MEMStacks 0x0C7FE000           // Dirección de las pilas
+
+uint32_t MEMDStack;                    // Dirección de la pila de debug
+uint32_t *SPDStack;                    // Stack pointer de la pila de debug
 
 /**
- * Reserva espacio para n llamadas y pone el puntero al principio.
+ * Reserva espacio para n llamadas y coloca el puntero al principio.
  */
 void init_debug_stack(int n)
 {
-	MEMDStack = MEMStacks - n*3*4;// 3 enteros
-	SDStack = n;
-	SPDStack = (int*)MEMDStack;
+   MEMDStack = MEMStacks - n * 3 * 4;  // 3 elementos.
+   SPDStack = (uint32_t *) MEMDStack;
 }
 
 /**
@@ -22,10 +20,11 @@ void init_debug_stack(int n)
  */
 void push_debug(int ID_evento, int auxData)
 {
-	*SPDStack = ID_evento;
-	*(SPDStack+1) = auxData;
-	*(SPDStack+2) = 7;//timer2_leer();
-	SPDStack += 3;
-	if (SPDStack==(int*)MEMStacks) SPDStack = (int*)MEMDStack;//Si se llena la pila volver al comienzo.
+   *(SPDStack++) = ID_evento;
+   *(SPDStack++) = auxData;
+   *(SPDStack++) = timer2_leer();
 
+// Si se llena la pila vuelve al inicio de la pila.
+   if (SPDStack == (uint32_t *) MEMStacks)
+      SPDStack = (uint32_t *) MEMDStack;
 }

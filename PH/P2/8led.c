@@ -15,7 +15,7 @@
 
 enum {
     cero      = ~0xED,
-    uno	      = ~0x60,
+    uno       = ~0x60,
     dos       = ~0xCE,
     tres      = ~0xEA,
     cuatro    = ~0x63,
