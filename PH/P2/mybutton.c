@@ -6,22 +6,27 @@
 *********************************************************************************************/
 
 /*--- ficheros de cabecera ---*/
+#include <inttypes.h>
 #include "44blib.h"
 #include "44b.h"
 #include "def.h"
 
 /*--- Constantes ---*/
-int trp = 100;
-int trd = 100;
+int trp = 1000000;//microseg
+int trd = 1000000;//microseg
+int tpuls = 10000;//microseg
 
-enum ESTADOS { ESPERANDO, PULSANDO, PULSADO, SOLTANDO, MANTENIDO };
+enum ESTADOS_BOTON { ESPERANDO, PULSANDO, PULSADO, SOLTANDO, MANTENIDO };
+enum ESTADOS_SUDOKU { FILA_INIT, FILA_VALOR, COLUMNA_INIT, COLUMNA_VALOR, VALOR};
 
 /*--- variables globales ---*/
-int boton = rEXTINTPND;
+int boton;
 int estado = PULSANDO;
-int estado_retorno = PULSANDO;
-int ultimo_tiempo = -1;
-
+int estado_sudoku = FILA_INIT;
+int nuevo_valor = 0;
+extern int fila;
+extern int columna;
+extern int valor;
 /* int_count la utilizamos para sacar un número por el 8led.
   Cuando se pulsa un botón sumamos y con el otro restamos. ¡A veces hay rebotes! */
 unsigned int int_count = 0;
@@ -30,10 +35,12 @@ unsigned int int_count = 0;
 void mybutton_ISR(void) __attribute__((interrupt("IRQ")));
 void mybutton_init(void);
 void aplicar_efecto_boton(void);
+void comprobar_boton(void);
 extern void D8Led_symbol(int value); // declaramos la función que escribe en el 8led
 extern uint32_t timer4_leer();
 extern void timer4_empezar(uint32_t nuevo_intervalo);
 extern void timer4_inicializar();
+extern int wait_timer4();
 
 /*--- codigo de funciones ---*/
 void mybutton_init(void)
@@ -74,38 +81,40 @@ void mybutton_ISR(void)
 
 void comprobar_boton(void)
 {
-	int tiempo_transcurrido = timer4_leer();
 	// Actualiza con cada interrupcion del timer
-	if (tiempo_transcurrido != ultimo_tiempo)
+	if (estado != ESPERANDO && wait_timer4()==1)
 	{
-		ultimo_tiempo = tiempo_transcurrido;
 		switch(estado)
 		{
 			case PULSANDO:
 				aplicar_efecto_boton();
-				timer4_empezar(10000);// Reiniciar timer.
+				timer4_empezar(tpuls);// Reiniciar timer.
 				estado = PULSADO;
 				break;
 			case PULSADO:
 				if (rPDATG == boton<<4){
 					estado = SOLTANDO;
-				} else if (tiempo_transcurrido>=50){
+				} else if (timer4_leer()>=50){
 					aplicar_efecto_boton();
-					timer4_empezar(10000);// Reiniciar timer.
+					timer4_empezar(tpuls);// Reiniciar timer.
 					estado = MANTENIDO;
 				}
 				break;
 			case MANTENIDO:
 				if ((rPDATG & (boton<<4)) > 0){
 					estado = SOLTANDO;
-				} else if (tiempo_transcurrido>=30){
+					timer4_empezar(trd);// Reiniciar timer.
+				} else if (timer4_leer()>=30){
 					aplicar_efecto_boton();
-					timer4_empezar(10000);// Reiniciar timer.
+					timer4_empezar(tpuls);// Reiniciar timer.
 				}
 				break;
 			case SOLTANDO:
 				estado = ESPERANDO;
 				break;
+			default:
+			   estado = ESPERANDO;
+			   break;
 		}
 	}
 }
@@ -123,5 +132,60 @@ void aplicar_efecto_boton(void)
 		default:
 			break;
 	}
-	D8Led_symbol(int_count&0x000f);// sacamos el valor por pantalla (módulo 16)
+
+   D8Led_symbol(int_count&0x000f);// sacamos el valor por pantalla (módulo 16)
+   /*
+	switch (boton)
+	{
+		case 4:
+			switch(estado_sudoku)
+			{
+			case FILA_INIT:
+				D8Led_Symbol(0xF);
+				break;
+			case FILA_VALOR:
+				fila%=9;
+				fila++;
+				D8Led_Symbol(fila);
+				break;
+			case COLUMNA_INIT:
+				D8Led_Symbol(0xC);
+				break;
+			case COLUMNA_VALOR:
+				columna%=9;
+				columna++;
+				D8Led_Symbol(columna);
+				break;
+			case VALOR:
+				valor++%10;
+				D8Led_Symbol(valor);
+				break;
+			}
+			break;
+		case 8:
+			switch(estado_sudoku)
+			{
+			case FILA_INIT:
+				estado_sudoku = FILA_VALOR;
+				break;
+			case FILA_VALOR:
+				estado_sudoku = COLUMNA_INIT;
+				break;
+			case COLUMNA_INIT:
+				estado_sudoku = COLUMNA_VALOR;
+				break;
+			case COLUMNA_VALOR:
+				estado_sudoku = VALOR;
+				break;
+			case VALOR:
+				estado_sudoku = FILA_INIT;
+				nuevo_valor = 1;
+				break;
+			}
+			break;
+		default:
+			break;
+	}
+   */
+
 }

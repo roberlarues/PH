@@ -11,7 +11,7 @@ int SDStack; // Tamaño de la pila
  */
 void init_debug_stack(int n)
 {
-	MEMDStack = MEMStacks - n*3*4;// 3 enteros
+	MEMDStack = MEMStacks - n*12;// 3 enteros * 4 bytes/entero
 	SDStack = n;
 	SPDStack = (int*)MEMDStack;
 }

@@ -11,10 +11,9 @@
 //#include "44b.h"
 #include "stdio.h"
 
-uint32_t MEMStacks = 0x0c7FE000;// DIrección de las pilas
-uint32_t MEMDStack;// Dirección de la pila de debug
-int *SPDStack;// Stack pointer de la pila de debug
-int SDStack; // Tamaño de la pila
+int fila = 0;
+int columna = 0;
+uint8_t valor = 0;
 
 /*--- variables globales ---*/
 extern int switch_leds;
@@ -30,7 +29,6 @@ extern void D8Led_init();
 
 /*--- declaracion de funciones ---*/
 void Main(void);
-void init_debug_stack();
 
 /*--- codigo de funciones ---*/
 void Main(void)
@@ -38,10 +36,9 @@ void Main(void)
 
 	/* Inicializa controladores */
 	sys_init();        // Inicializacion de la placa, interrupciones y puertos
-	timer_init();	   // Inicializacion del temporizador
+	//timer_init();	   // Inicializacion del temporizador
 	mybutton_init();	// inicializamos los pulsadores. Cada vez que se pulse se verá reflejado en el 8led
 	D8Led_init(); // inicializamos el 8led
-
 
 	/* Valor inicial de los leds */
 	leds_off();
