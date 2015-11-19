@@ -3,19 +3,23 @@
 #include "44blib.h"
 
 uint32_t timer4_num_int = 0;
-uint32_t intervalo = 10000;
+uint32_t intervalo = 1000000;
+uint32_t avisar = 0;
 
 void timer4_ISR(void) __attribute__((interrupt("IRQ")));
 
 void timer4_ISR(void)
 {
     timer4_num_int++;
+    avisar = 1;
 	/* borrar bit en I_ISPC para desactivar la solicitud de interrupción*/
 	rI_ISPC |= BIT_TIMER4; // BIT_TIMER2 está definido en 44b.h y pone un uno en el bit 11 que correponde al Timer2
 }
 
 void timer4_empezar(uint32_t nuevo_intervalo)
 {
+   avisar = 0;
+   timer4_num_int = 0;
    rTCNTB4 = nuevo_intervalo;// valor inicial de cuenta (la cuenta es descendente)
 
    uint32_t TCON_tmp;
@@ -33,12 +37,12 @@ void timer4_inicializar()
 	/* Configuraion controlador de interrupciones */
 	rINTMOD = 0x0; // Configura las linas como de tipo IRQ
 	rINTCON = 0x1; // Habilita int. vectorizadas y la linea IRQ (FIQ no)
-	rINTMSK &= ~(BIT_GLOBAL | BIT_TIMER4); // Emascara todas las lineas excepto Timer0 y el bit global (bits 26 y 13, BIT_GLOBAL y BIT_TIMER0 están definidos en 44b.h)
+	rINTMSK &= ~(BIT_GLOBAL | BIT_TIMER4); // Emascara todas las lineas excepto Timer4 y el bit global (bits 26 y 13, BIT_GLOBAL y BIT_TIMER0 están definidos en 44b.h)
 
 	/* Establece la rutina de servicio para TIMER0 */
 	pISR_TIMER4 = (unsigned) timer4_ISR;
 
-	/* Configura el Timer0 */
+	/* Configura el Timer4. Precision = 1 microsegundo */
 	rTCFG0 |= 31 << 16; // ajusta el preescalado
 	rTCFG1 |= 0 << 16; // selecciona la entrada del mux que proporciona el reloj. La 00 corresponde a un divisor de 1/2.
 	rTCMPB4 = 0;// valor de comparación
@@ -51,4 +55,15 @@ uint32_t timer4_leer()
 	valor_leido = timer4_num_int;
 
 	return valor_leido;
+}
+
+int wait_timer4()
+{
+   if (avisar){
+      avisar = 0;
+      return 1;
+   } else {
+      return 0;
+   }
+
 }
